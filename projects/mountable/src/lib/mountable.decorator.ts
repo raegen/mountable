@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Provider,
+  Type,
   TypeDecorator,
   ɵComponentDef as ComponentDef,
   ɵDirectiveDef as DirectiveDef,
@@ -27,12 +28,10 @@ export interface IvyMetadata {
   [NG_FACTORY_DEF]?: (...args) => any;
 }
 
-export interface MountableTarget extends IvyMetadata, OnMount, OnUnmount {
+export interface MountableTarget<T extends Type<any>> extends IvyMetadata {
   new (...args: any[]): Mountable;
   [NG_MNT_DEF]: MountableMetadata;
 }
-
-export class MountableTarget {}
 
 export interface StatefulNavigation extends Navigation {
   restoredState?: any;
@@ -43,8 +42,8 @@ export interface MountEvent {
   mounted: boolean;
 }
 
-const connectMounter = (host: Mountable, mounter: Mounter) => {
-  const cache = new Cache(5);
+const connectMounter = (host: Mountable, mounter: Mounter, cacheSize: number) => {
+  const cache = new Cache(cacheSize);
   let cycle = new Subscription();
   host[MOUNTABLE_KEY_NAME] = mounter;
 
@@ -91,19 +90,19 @@ export interface OnUnmount {
   ngOnUnmount?(navigation: StatefulNavigation);
 }
 
-export interface ComponentDefFeature {
-  <T>(componentDef: ComponentDef<T>): void;
+export interface DirectiveDefFeature {
+  <T>(directiveDef: DirectiveDef<T>): void;
   ngInherit?: true;
 }
 
-const createMountableFeature = (): ComponentDefFeature => {
-  const mountableFeature: ComponentDefFeature = (componentDef: DirectiveDef<any>) => {
+const createMountableFeature = (config: MountableMetadata): DirectiveDefFeature => {
+  const mountableFeature: DirectiveDefFeature = (componentDef: DirectiveDef<any>) => {
     const factory = componentDef.type[NG_FACTORY_DEF];
     delete componentDef.type[NG_FACTORY_DEF];
     componentDef.type[NG_FACTORY_DEF] = (...args): Mountable => {
       const instance: Mountable = factory(...args);
       if (!getMountable(instance)) {
-        connectMounter(instance, directiveInject(Mounter))
+        connectMounter(instance, directiveInject(Mounter), config.cache)
       }
 
       return instance;
@@ -121,8 +120,8 @@ const getTypes = defs =>
 
 export const extendProvidersFeature = (
   providers: Provider[]
-): ComponentDefFeature => {
-  const feature: ComponentDefFeature = definition => {
+): DirectiveDefFeature => {
+  const feature: DirectiveDefFeature = definition => {
     const providersResolver = definition.providersResolver || noop;
     providersFeature(providers, [])(definition);
     const extendProvidersResolver = definition.providersResolver;
@@ -137,9 +136,8 @@ export const extendProvidersFeature = (
   return feature;
 };
 
-const defineWithProviders = {
-  [NG_COMP_DEF]: (definition: ComponentDef<any>, providers: Provider[]) => {
-    const features = definition.features || [];
+const extendFeatures = {
+  [NG_COMP_DEF]: (definition: ComponentDef<any>, features: DirectiveDefFeature[]) => {
     const {
       type,
       selectors,
@@ -193,15 +191,10 @@ const defineWithProviders = {
       directives: directives || undefined,
       pipes: pipes || undefined,
       schemas: schemas || undefined,
-      features: [
-        ...features,
-        extendProvidersFeature(providers),
-        createMountableFeature(),
-      ],
+      features: [...(definition.features || []), ...features],
     });
   },
-  [NG_DIR_DEF]: (definition: DirectiveDef<any>, providers: Provider[]) => {
-    const features = definition.features || [];
+  [NG_DIR_DEF]: (definition: DirectiveDef<any>, features: DirectiveDefFeature[]) => {
     const {
       type,
       selectors,
@@ -226,46 +219,51 @@ const defineWithProviders = {
       contentQueries: contentQueries || undefined,
       exportAs: exportAs || undefined,
       viewQuery: viewQuery || undefined,
-      features: [
-        ...features,
-        extendProvidersFeature(providers),
-        createMountableFeature(),
-      ],
+      features: [...(definition.features || []), ...features],
     });
   },
 };
 
-export function decorateRouteLifecycle(
-  declarableType: MountableTarget,
+export function decorateRouteLifecycle<T extends Type<Mountable>>(
+  Type: T,
   config: MountableMetadata
-): MountableTarget {
-  const DEF = NG_COMP_DEF in declarableType ? NG_COMP_DEF : NG_DIR_DEF;
+): MountableTarget<T> {
+  const DEF = NG_COMP_DEF in Type ? NG_COMP_DEF : NG_DIR_DEF;
 
-  const definition = declarableType[DEF];
-  delete declarableType[DEF];
-  declarableType[DEF] = defineWithProviders[DEF](definition, [
-    {
-      provide: Mounter,
-      useClass: config.detached ? DetachedMounter : Mounter,
-    },
+  const definition = extendFeatures[DEF](Type[DEF], [
+    extendProvidersFeature([
+      {
+        provide: Mounter,
+        useClass: config.detached ? DetachedMounter : Mounter,
+      },
+    ]),
+    createMountableFeature(config)
   ]);
 
-  declarableType[NG_MNT_DEF] = config;
+  return class Mountable extends Type {
+    // @ts-ignore
+    static get [DEF]() {
+      return definition;
+    }
 
-  return declarableType;
+    static [NG_MNT_DEF] = config
+  };
 }
 
 interface MountableMetadata {
   detached: boolean;
+  cache: number;
 }
 
 export interface Mountable extends OnMount, OnUnmount {
   [MOUNTABLE_KEY_NAME]: Mounter;
 }
 
-export function Mountable(
-  config: MountableMetadata = { detached: false }
+const CONFIG = { detached: false, cache: 5 }
+
+export function Mountable<T extends Type<Mountable>>(
+  config: MountableMetadata = CONFIG
 ): TypeDecorator {
-  return (target: MountableTarget): MountableTarget =>
+  return (target: T): MountableTarget<T> =>
     decorateRouteLifecycle(target, config);
 }
