@@ -1,12 +1,13 @@
 {
   "name": "@raegen/mountable",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Angular route reuse strategy infrastructure.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/raegen/mountable.git"
   },
   "author": "raegen",
+  "private": false,
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/raegen/mountable/issues"
