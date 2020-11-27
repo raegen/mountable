@@ -1,6 +1,6 @@
 import {ComponentFactoryResolver, ComponentRef, Directive} from "@angular/core";
 import {ActivatedRoute, RouterOutlet} from "@angular/router";
-import {getMountable, isMountable} from "./mountable.decorator";
+import {getMountable, isMountable} from "./util";
 
 @Directive({
   selector: 'mountable-router-outlet',

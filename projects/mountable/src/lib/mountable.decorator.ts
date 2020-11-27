@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Provider,
-  Type,
   TypeDecorator,
   ɵComponentDef as ComponentDef,
   ɵDirectiveDef as DirectiveDef,
@@ -17,13 +16,7 @@ import {Navigation} from '@angular/router';
 import {noop, Subscription} from 'rxjs';
 import {Cache} from "./cache";
 import {DetachedMounter, Mounter} from "./mounter.service";
-
-export const NG_MNT_DEF = 'ɵmnt';
-export const MOUNTABLE_KEY_NAME = '__ngMountable__';
-
-export const isMountable = (target: Type<any> | any) => NG_MNT_DEF in (typeof target === 'function' ? target : target?.constructor);
-
-export const getMountable = (target: Mountable) => target?.[MOUNTABLE_KEY_NAME];
+import {getMountable, MOUNTABLE_KEY_NAME, NG_MNT_DEF} from "./util";
 
 export interface IvyMetadata {
   // @ts-ignore

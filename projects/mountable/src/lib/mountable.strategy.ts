@@ -1,5 +1,5 @@
 import {ActivatedRouteSnapshot, DetachedRouteHandle, Route, RouteReuseStrategy,} from '@angular/router';
-import {isMountable} from "./mountable.decorator";
+import {isMountable} from "./util";
 
 export class MountableStrategy implements RouteReuseStrategy {
   private handlers: Map<Route, DetachedRouteHandle> = new Map();
