@@ -16,7 +16,7 @@ export class MountableStrategy implements RouteReuseStrategy {
       return false;
     }
     /** Whether this route should be re used or not */
-    return isMountable(route.component);
+    return isMountable(route.routeConfig.component);
   }
 
   identify(route) {
@@ -61,8 +61,8 @@ export class MountableStrategy implements RouteReuseStrategy {
      * @see https://github.com/angular/angular/blob/4.4.6/packages/router/src/route_reuse_strategy.ts#L67
      */
     if (current === this.prevFuture && future === this.prevCurrent) {
-      return isMountable(current.component) ||
-        isMountable(future.component) || future.routeConfig === current.routeConfig;
+      return isMountable(current.routeConfig.component) ||
+        isMountable(future.routeConfig.component) || future.routeConfig === current.routeConfig;
     }
     this.prevCurrent = current;
     this.prevFuture = future;
