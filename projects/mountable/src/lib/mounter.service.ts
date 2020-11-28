@@ -22,20 +22,20 @@ export class Mounter {
     public changeDetectorRef: ChangeDetectorRef,
     @Optional() outlet: MountableRouterOutlet
   ) {
-    if (!outlet) {
-      // rendered outside of router scope
-      this._mounted.next({
-        mounted: true,
-        navigation:
-          router.getCurrentNavigation(),
-      });
-    } else if (parent) {
+   if (parent) {
       this.subscription.add(
         parent.mounted.subscribe(mounted => {
           this._mounted.next(mounted);
         })
       );
-    }
+    } else if (!outlet) {
+     // rendered outside of router scope
+     this._mounted.next({
+       mounted: true,
+       navigation:
+         router.getCurrentNavigation(),
+     });
+   }
   }
 
   mount(navigation: Navigation) {
