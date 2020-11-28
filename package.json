@@ -1,6 +1,6 @@
 {
   "name": "mountable",
-  "version": "0.0.0",
+  "version": "0.0.7",
   "description": "Angular route reuse strategy infrastructure.",
   "repository": {
     "type": "git",
