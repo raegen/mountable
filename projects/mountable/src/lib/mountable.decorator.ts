@@ -12,12 +12,12 @@ import {
   ɵɵdirectiveInject as directiveInject,
   ɵɵProvidersFeature as providersFeature,
 } from '@angular/core';
-import { NG_FACTORY_DEF } from '@angular/core/esm2015/src/render3/fields';
-import { Navigation } from '@angular/router';
-import { noop, Subscription } from 'rxjs';
-import { Cache } from './cache';
-import { DetachedMounter, Mounter } from './mounter.service';
-import { getMountable, MOUNTABLE_KEY_NAME, NG_MNT_DEF } from './util';
+import {NG_FACTORY_DEF} from '@angular/core/esm2015/src/render3/fields';
+import {Navigation} from '@angular/router';
+import {noop, Subscription} from 'rxjs';
+import {Cache} from './cache';
+import {DetachedMounter, Mounter} from './mounter.service';
+import {getMountable, MOUNTABLE_KEY_NAME, NG_MNT_DEF} from './util';
 
 export interface IvyMetadata {
   // @ts-ignore
@@ -236,11 +236,14 @@ export function decorateRouteLifecycle<T extends Type<Mountable>>(
     ])
   ]);
 
+  Object.defineProperty(Type, DEF, {
+    value: Type[DEF],
+    writable: true
+  });
+
   return class Mountable extends Type {
     // @ts-ignore
-    static get [DEF]() {
-      return { ...definition, type: this };
-    }
+    static [DEF] = { ...definition, type: Mountable };
 
     static get [NG_MNT_DEF]() {
       return config;
@@ -257,7 +260,7 @@ export function decorateRouteLifecycle<T extends Type<Mountable>>(
         connectMounter(this, directiveInject(Mounter), config.cache);
       }
     }
-  };
+  }
 }
 
 interface MountableMetadata {
