@@ -58,7 +58,7 @@ const connectMounter = (
       mounter.changeDetectorRef.reattach();
       if (host.ngOnMount) {
         // check cache for navigationId
-        const cached = cache.get(mounted.navigation.id);
+        const cached = mounted.navigation && cache.get(mounted.navigation.id);
 
         cycle = (subscription =>
           subscription instanceof Subscription

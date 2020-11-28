@@ -32,8 +32,7 @@ export class Mounter {
      // rendered outside of router scope
      this._mounted.next({
        mounted: true,
-       navigation:
-         router.getCurrentNavigation(),
+       navigation: null,
      });
    }
   }

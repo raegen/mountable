@@ -1,6 +1,6 @@
 {
   "name": "mountable",
-  "version": "0.0.7",
+  "version": "0.2.0",
   "description": "Angular route reuse strategy infrastructure.",
   "repository": {
     "type": "git",
@@ -17,7 +17,8 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "publish": "ng build --prod && cd dist/mountable && npm publish"
   },
   "private": false,
   "dependencies": {
