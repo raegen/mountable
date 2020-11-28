@@ -104,6 +104,26 @@ export interface DirectiveDefFeature {
   ngInherit?: true;
 }
 
+const createMountableFeature = (config: MountableMetadata): DirectiveDefFeature => {
+  const mountableFeature: DirectiveDefFeature = (componentDef: DirectiveDef<any>) => {
+    const factory = componentDef.type[NG_FACTORY_DEF];
+    Object.defineProperty(componentDef.type, NG_FACTORY_DEF, {
+      value: (...args): Mountable => {
+        const instance: Mountable = factory(...args);
+        if (!getMountable(instance)) {
+          connectMounter(instance, directiveInject(Mounter), config.cache)
+        }
+
+        return instance;
+      },
+      writable: true
+    })
+  };
+
+  mountableFeature.ngInherit = true;
+  return mountableFeature;
+};
+
 const getTypes = defs =>
   typeof defs === 'function'
     ? defs().map(definition => definition.type)
@@ -222,45 +242,28 @@ const extendFeatures = {
 };
 
 export function decorateRouteLifecycle<T extends Type<Mountable>>(
-  Type: T,
+  Type: T & {[NG_MNT_DEF]?: MountableMetadata},
   config: MountableMetadata
 ): MountableTarget<T> {
   const DEF = NG_COMP_DEF in Type ? NG_COMP_DEF : NG_DIR_DEF;
 
-  const definition = extendFeatures[DEF](Type[DEF], [
-    extendProvidersFeature([
-      {
-        provide: Mounter,
-        useClass: config.detached ? DetachedMounter : Mounter
-      }
-    ])
-  ]);
-
   Object.defineProperty(Type, DEF, {
-    value: Type[DEF],
+    value: extendFeatures[DEF](Type[DEF], [
+      extendProvidersFeature([
+        {
+          provide: Mounter,
+          useClass: config.detached ? DetachedMounter : Mounter
+        }
+      ]),
+      createMountableFeature(config)
+    ]),
     writable: true
   });
+  Object.defineProperty(Type, NG_MNT_DEF, {
+    value: config
+  })
 
-  return class Mountable extends Type {
-    // @ts-ignore
-    static [DEF] = { ...definition, type: Mountable };
-
-    static get [NG_MNT_DEF]() {
-      return config;
-    }
-
-    // @ts-ignore
-    static [NG_FACTORY_DEF](...args) {
-      return new Mountable(...args);
-    }
-
-    constructor(...args: any[]) {
-      super(...args);
-      if (!getMountable(this)) {
-        connectMounter(this, directiveInject(Mounter), config.cache);
-      }
-    }
-  }
+  return Type as MountableTarget<T>;
 }
 
 interface MountableMetadata {
