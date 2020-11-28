@@ -1,24 +1,14 @@
 # Mountable
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.6.
+- Angular route reuse strategy infrastructure.
+- The missing parts needed to make route reuse strategy viable.
 
-## Code scaffolding
+# Usage
 
-Run `ng generate component component-name --project mountable` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project mountable`.
-> Note: Don't forget to add `--project mountable` or else it will be added to the default project in your `angular.json` file. 
-
-## Build
-
-Run `ng build mountable` to build the project. The build artifacts will be stored in the `dist/` directory.
-
-## Publishing
-
-After building your library with `ng build mountable`, go to the dist folder `cd dist/mountable` and run `npm publish`.
-
-## Running unit tests
-
-Run `ng test mountable` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+- Instead of vendor **router-outlet**, import **MountableModule** and use **mountable-router-outlet**.
+- On components(or directives) you want to be reused, apply the **@Mountable()** decorator.
+  - that makes them reused and provides two new lifecycle hooks: **ngOnMount** and **ngOnUnmount**, that are called when the component tree is attached/detached to/from the outlet
+  - the root route components (ones you declare on the router configuration **Route**) require to have **@Mountabe()** for their tree to be reused. On their descendants, **@Mountable()** has to be added only if you wish to hook into **ngOnMount** and **ngOnUnmount**.
+  - both **ngOnMount** and **ngOnUnmount** are called with one argument, namely **StatefulNavigation extends Navigation { restoredState?: any }** event that triggered the route change that attaches/detaches the component.
+  - Returning a subscription in **ngOnMount** will automatically unsubscribe from that subscription on Unmount, so it's handy to create all your subscriptions in **ngOnMount** and return them, so they will be created and unsubscribed through the lifecycle.
+ 
