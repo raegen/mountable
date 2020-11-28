@@ -12,12 +12,12 @@ import {
   ɵɵdirectiveInject as directiveInject,
   ɵɵProvidersFeature as providersFeature,
 } from '@angular/core';
-import {NG_FACTORY_DEF} from '@angular/core/esm2015/src/render3/fields';
-import {Navigation} from '@angular/router';
-import {noop, Subscription} from 'rxjs';
-import {Cache} from "./cache";
-import {DetachedMounter, Mounter} from "./mounter.service";
-import {getMountable, MOUNTABLE_KEY_NAME, NG_MNT_DEF} from "./util";
+import { NG_FACTORY_DEF } from '@angular/core/esm2015/src/render3/fields';
+import { Navigation } from '@angular/router';
+import { noop, Subscription } from 'rxjs';
+import { Cache } from './cache';
+import { DetachedMounter, Mounter } from './mounter.service';
+import { getMountable, MOUNTABLE_KEY_NAME, NG_MNT_DEF } from './util';
 
 export interface IvyMetadata {
   // @ts-ignore
@@ -42,7 +42,11 @@ export interface MountEvent {
   mounted: boolean;
 }
 
-const connectMounter = (host: Mountable, mounter: Mounter, cacheSize: number) => {
+const connectMounter = (
+  host: Mountable,
+  mounter: Mounter,
+  cacheSize: number
+) => {
   const cache = new Cache(cacheSize);
   let cycle = new Subscription();
   host[MOUNTABLE_KEY_NAME] = mounter;
@@ -55,11 +59,16 @@ const connectMounter = (host: Mountable, mounter: Mounter, cacheSize: number) =>
         // check cache for navigationId
         const cached = cache.get(mounted.navigation.id);
 
-        cycle = (subscription => subscription instanceof Subscription ? subscription : new Subscription())(host.ngOnMount({
-          ...mounted.navigation,
-          // if state present for this mountable id (history popstate event), pass it to ngOnMount upon call
-          restoredState: cached?.state || null,
-        }));
+        cycle = (subscription =>
+          subscription instanceof Subscription
+            ? subscription
+            : new Subscription())(
+          host.ngOnMount({
+            ...mounted.navigation,
+            // if state present for this mountable id (history popstate event), pass it to ngOnMount upon call
+            restoredState: cached?.state || null
+          })
+        );
       }
     } else if (!mounted.mounted) {
       cycle.unsubscribe();
@@ -71,14 +80,14 @@ const connectMounter = (host: Mountable, mounter: Mounter, cacheSize: number) =>
           // add it to cache to enable restoring it upon popstate
           cache.push({
             id: mounter.router.getCurrentNavigation()?.id,
-            state,
+            state
           });
         }
       }
       mounter.changeDetectorRef.detach();
     }
-  })
-}
+  });
+};
 
 export interface OnMount {
   ngOnMount?(
@@ -119,7 +128,10 @@ export const extendProvidersFeature = (
 };
 
 const extendFeatures = {
-  [NG_COMP_DEF]: (definition: ComponentDef<any>, features: DirectiveDefFeature[]): ComponentDef<any> => {
+  [NG_COMP_DEF]: (
+    definition: ComponentDef<any>,
+    features: DirectiveDefFeature[]
+  ): ComponentDef<any> => {
     const {
       type,
       selectors,
@@ -142,7 +154,7 @@ const extendFeatures = {
       onPush,
       directiveDefs,
       pipeDefs,
-      schemas,
+      schemas
     } = definition;
 
     const directives = getTypes(directiveDefs);
@@ -173,10 +185,13 @@ const extendFeatures = {
       directives: directives || undefined,
       pipes: pipes || undefined,
       schemas: schemas || undefined,
-      features: [...(definition.features || []), ...features],
+      features: [...(definition.features || []), ...features]
     });
   },
-  [NG_DIR_DEF]: (definition: DirectiveDef<any>, features: DirectiveDefFeature[]): DirectiveDef<any> => {
+  [NG_DIR_DEF]: (
+    definition: DirectiveDef<any>,
+    features: DirectiveDefFeature[]
+  ): DirectiveDef<any> => {
     const {
       type,
       selectors,
@@ -187,7 +202,7 @@ const extendFeatures = {
       hostAttrs,
       contentQueries,
       exportAs,
-      viewQuery,
+      viewQuery
     } = definition;
 
     return defineDirective({
@@ -201,9 +216,9 @@ const extendFeatures = {
       contentQueries: contentQueries || undefined,
       exportAs: exportAs || undefined,
       viewQuery: viewQuery || undefined,
-      features: [...(definition.features || []), ...features],
+      features: [...(definition.features || []), ...features]
     });
-  },
+  }
 };
 
 export function decorateRouteLifecycle<T extends Type<Mountable>>(
@@ -216,30 +231,30 @@ export function decorateRouteLifecycle<T extends Type<Mountable>>(
     extendProvidersFeature([
       {
         provide: Mounter,
-        useClass: config.detached ? DetachedMounter : Mounter,
-      },
+        useClass: config.detached ? DetachedMounter : Mounter
+      }
     ])
   ]);
 
   return class Mountable extends Type {
     // @ts-ignore
     static get [DEF]() {
-      return {...definition, type: this};
+      return { ...definition, type: this };
     }
 
     static get [NG_MNT_DEF]() {
-      return config
+      return config;
     }
 
     // @ts-ignore
-    static get [NG_FACTORY_DEF]() {
-      return (...args) => new Mountable(...args);
+    static [NG_FACTORY_DEF](...args) {
+      return new Mountable(...args);
     }
 
     constructor(...args: any[]) {
       super(...args);
       if (!getMountable(this)) {
-        connectMounter(this, directiveInject(Mounter), config.cache)
+        connectMounter(this, directiveInject(Mounter), config.cache);
       }
     }
   };
@@ -254,7 +269,7 @@ export interface Mountable extends OnMount, OnUnmount {
   [MOUNTABLE_KEY_NAME]: Mounter;
 }
 
-const CONFIG = { detached: false, cache: 5 }
+const CONFIG = { detached: false, cache: 5 };
 
 export function Mountable<T extends Type<Mountable>>(
   config: MountableMetadata = CONFIG
