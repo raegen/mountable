@@ -1,6 +1,6 @@
 {
   "name": "@raegen/mountable",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Angular route reuse strategy infrastructure.",
   "repository": {
     "type": "git",

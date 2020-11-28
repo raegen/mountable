@@ -49,6 +49,7 @@ const connectMounter = (
 ) => {
   const cache = new Cache(cacheSize);
   let cycle = new Subscription();
+  let navigation = null;
   host[MOUNTABLE_KEY_NAME] = mounter;
 
   return mounter._mounted.subscribe((mounted: MountEvent) => {
@@ -79,13 +80,15 @@ const connectMounter = (
           // check if ngOnUnmount returned any non-undefined value and if so,
           // add it to cache to enable restoring it upon popstate
           cache.push({
-            id: mounter.router.getCurrentNavigation()?.id,
+            id: navigation.id,
             state
           });
         }
       }
       mounter.changeDetectorRef.detach();
     }
+
+    navigation = mounted.navigation;
   });
 };
 

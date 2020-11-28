@@ -1,7 +1,7 @@
 import {ChangeDetectorRef, forwardRef, Inject, Injectable, Optional, SkipSelf} from "@angular/core";
 import {ReplaySubject, Subscription} from "rxjs";
 import {distinctUntilChanged} from "rxjs/operators";
-import {Router} from "@angular/router";
+import {Navigation, Router} from "@angular/router";
 import {MountableRouterOutlet} from "./outlet.directive";
 import {MountEvent} from "./mountable.decorator";
 
@@ -38,19 +38,17 @@ export class Mounter {
     }
   }
 
-  mount() {
+  mount(navigation: Navigation) {
     this._mounted.next({
       mounted: true,
-      navigation:
-        this.router.getCurrentNavigation(),
+      navigation,
     });
   }
 
-  unmount() {
+  unmount(navigation: Navigation) {
     this._mounted.next({
       mounted: false,
-      navigation:
-        this.router.getCurrentNavigation(),
+      navigation,
     });
   }
 }
