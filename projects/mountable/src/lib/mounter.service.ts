@@ -1,6 +1,6 @@
-import {ChangeDetectorRef, forwardRef, Inject, Injectable, Optional, SkipSelf} from "@angular/core";
+import {ChangeDetectorRef, forwardRef, Inject, Injectable, NgZone, Optional, SkipSelf} from "@angular/core";
 import {ReplaySubject, Subscription} from "rxjs";
-import {distinctUntilChanged} from "rxjs/operators";
+import {debounce, distinctUntilChanged, first} from "rxjs/operators";
 import {Navigation, Router} from "@angular/router";
 import {MountableRouterOutlet} from "./outlet.directive";
 import {MountEvent} from "./mountable.decorator";
@@ -8,7 +8,8 @@ import {MountEvent} from "./mountable.decorator";
 @Injectable()
 export class Mounter {
   private subscription = new Subscription();
-  readonly _mounted = new ReplaySubject<MountEvent>(1);
+  readonly mounted$ = new ReplaySubject<MountEvent>(1);
+  readonly _mounted = this.mounted$.pipe(debounce(() => this.ngZone.onStable.pipe(first())))
   readonly mounted: ReplaySubject<MountEvent> = this._mounted.pipe(
     distinctUntilChanged((a, b) => a.mounted === b.mounted)
   ) as ReplaySubject<MountEvent>;
@@ -18,6 +19,7 @@ export class Mounter {
     @Optional()
     @Inject(forwardRef(() => Mounter))
     private parent: Mounter,
+    private ngZone: NgZone,
     public router: Router,
     public changeDetectorRef: ChangeDetectorRef,
     @Optional() outlet: MountableRouterOutlet
@@ -25,12 +27,12 @@ export class Mounter {
    if (parent) {
       this.subscription.add(
         parent.mounted.subscribe(mounted => {
-          this._mounted.next(mounted);
+          this.mounted$.next(mounted);
         })
       );
     } else if (!outlet) {
      // rendered outside of router scope
-     this._mounted.next({
+     this.mounted$.next({
        mounted: true,
        navigation: null,
      });
@@ -38,14 +40,14 @@ export class Mounter {
   }
 
   mount(navigation: Navigation) {
-    this._mounted.next({
+    this.mounted$.next({
       mounted: true,
       navigation,
     });
   }
 
   unmount(navigation: Navigation) {
-    this._mounted.next({
+    this.mounted$.next({
       mounted: false,
       navigation,
     });
