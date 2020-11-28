@@ -1,6 +1,6 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 
-import {Component, ViewChild} from "@angular/core";
+import {Component, OnInit, ViewChild} from "@angular/core";
 import {MountableModule} from "./mountable.module";
 import {Mountable} from "./mountable.decorator";
 import {Router, RouterModule} from "@angular/router";
@@ -9,23 +9,27 @@ import {MountableRouterOutlet} from "./outlet.directive";
 
 @Component({
   selector: 'mountable-component',
-  template: `
-    {{ date }}
-  `
+  template: ``
 })
-export class RegularComponent {
-  date = Date.now();
+export class RegularComponent implements OnInit {
+  hookCalled: number;
+
+  ngOnInit() {
+    this.hookCalled = Date.now();
+  }
 }
 
 @Mountable()
 @Component({
   selector: 'mountable-component',
-  template: `
-    {{ date }}
-  `
+  template: ``
 })
 export class MountableComponent {
-  date = Date.now();
+  hookCalled: number;
+
+  ngOnMount() {
+    this.hookCalled = Date.now();
+  }
 }
 
 @Component({
@@ -45,7 +49,7 @@ describe('MountableComponent', () => {
   let fixture: ComponentFixture<TestBedComponent>;
   let outlet: MountableRouterOutlet;
 
-  beforeEach(async () => {
+    beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MountableModule, RouterModule.forRoot([{
         path: 'mountable',
@@ -62,21 +66,19 @@ describe('MountableComponent', () => {
   });
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(TestBedComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    outlet = component.outlet;
+      fixture = TestBed.createComponent(TestBedComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      outlet = component.outlet;
   });
 
   it('RegularComponent should get new instance every time -> the date should change upon rerouting to it.', () => {
     return expectAsync(new Promise(resolve => {
       component.router.navigate(['/']).then(() => {
-        const date0 = outlet.component?.date;
+        const instance = outlet.component;
         component.router.navigate(['mountable']).then(() => {
           component.router.navigate(['/']).then(() => {
-            const date1 = outlet.component?.date;
-
-            resolve(date0 !== date1)
+            resolve(instance !== outlet.component)
           })
         })
       })
@@ -86,12 +88,42 @@ describe('MountableComponent', () => {
   it('MountableComponent should be instanced only once per route its defined in -> the date should not change upon rerouting to it.', () => {
     return expectAsync(new Promise(resolve => {
       component.router.navigate(['mountable']).then(() => {
-        const date0 = outlet.component?.date;
-        return component.router.navigate(['/']).then(() => {
-          return component.router.navigate(['mountable']).then(() => {
-            const date1 = outlet.component?.date;
+        const instance = outlet.component;
+        component.router.navigate(['/']).then(() => {
+          component.router.navigate(['mountable']).then(() => {
+            resolve(instance === outlet.component)
+          })
+        })
+      })
+    })).toBeResolvedTo(true)
+  })
 
-            resolve(date0 === date1)
+  it('RegularComponent ngOnInit should get called every time -> the date should change upon rerouting to it.', () => {
+    return expectAsync(new Promise(resolve => {
+      component.router.navigate(['/']).then(() => {
+        fixture.detectChanges();
+        const hookCalled = outlet.component.hookCalled;
+        component.router.navigate(['mountable']).then(() => {
+          fixture.detectChanges();
+          component.router.navigate(['/']).then(() => {
+            fixture.detectChanges();
+            resolve(hookCalled !== outlet.component.hookCalled)
+          })
+        })
+      })
+    })).toBeResolvedTo(true);
+  });
+
+  it('MountableComponent ngOnMount should get called every time -> the date should change upon rerouting to it.', () => {
+    return expectAsync(new Promise(resolve => {
+      component.router.navigate(['mountable']).then(() => {
+        fixture.detectChanges();
+        const hookCalled = outlet.component.hookCalled;
+        component.router.navigate(['/']).then(() => {
+          fixture.detectChanges();
+          component.router.navigate(['mountable']).then(() => {
+            fixture.detectChanges();
+            resolve(hookCalled !== outlet.component.hookCalled)
           })
         })
       })

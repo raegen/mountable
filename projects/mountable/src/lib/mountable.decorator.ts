@@ -95,24 +95,6 @@ export interface DirectiveDefFeature {
   ngInherit?: true;
 }
 
-const createMountableFeature = (config: MountableMetadata): DirectiveDefFeature => {
-  const mountableFeature: DirectiveDefFeature = (componentDef: DirectiveDef<any>) => {
-    const factory = componentDef.type[NG_FACTORY_DEF];
-    delete componentDef.type[NG_FACTORY_DEF];
-    componentDef.type[NG_FACTORY_DEF] = (...args): Mountable => {
-      const instance: Mountable = factory(...args);
-      if (!getMountable(instance)) {
-        connectMounter(instance, directiveInject(Mounter), config.cache)
-      }
-
-      return instance;
-    };
-  };
-
-  mountableFeature.ngInherit = true;
-  return mountableFeature;
-};
-
 const getTypes = defs =>
   typeof defs === 'function'
     ? defs().map(definition => definition.type)
@@ -137,7 +119,7 @@ export const extendProvidersFeature = (
 };
 
 const extendFeatures = {
-  [NG_COMP_DEF]: (definition: ComponentDef<any>, features: DirectiveDefFeature[]) => {
+  [NG_COMP_DEF]: (definition: ComponentDef<any>, features: DirectiveDefFeature[]): ComponentDef<any> => {
     const {
       type,
       selectors,
@@ -194,7 +176,7 @@ const extendFeatures = {
       features: [...(definition.features || []), ...features],
     });
   },
-  [NG_DIR_DEF]: (definition: DirectiveDef<any>, features: DirectiveDefFeature[]) => {
+  [NG_DIR_DEF]: (definition: DirectiveDef<any>, features: DirectiveDefFeature[]): DirectiveDef<any> => {
     const {
       type,
       selectors,
@@ -236,17 +218,30 @@ export function decorateRouteLifecycle<T extends Type<Mountable>>(
         provide: Mounter,
         useClass: config.detached ? DetachedMounter : Mounter,
       },
-    ]),
-    createMountableFeature(config)
+    ])
   ]);
 
   return class Mountable extends Type {
     // @ts-ignore
     static get [DEF]() {
-      return definition;
+      return {...definition, type: this};
     }
 
-    static [NG_MNT_DEF] = config
+    static get [NG_MNT_DEF]() {
+      return config
+    }
+
+    // @ts-ignore
+    static get [NG_FACTORY_DEF]() {
+      return (...args) => new Mountable(...args);
+    }
+
+    constructor(...args: any[]) {
+      super(...args);
+      if (!getMountable(this)) {
+        connectMounter(this, directiveInject(Mounter), config.cache)
+      }
+    }
   };
 }
 
