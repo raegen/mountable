@@ -19,19 +19,21 @@ export class MountableRouterOutlet extends RouterOutlet {
   }
 
   detach(): ComponentRef<any> {
+    const navigation = this.router.getCurrentNavigation();
     const detached = super.isActivated ? super.detach() : null;
     if (detached && isMountable(detached.instance)) {
-      getMountable(detached.instance).unmount(this.router.getCurrentNavigation());
+      getMountable(detached.instance).unmount(navigation);
     }
 
     return detached;
   }
 
   attach(ref: ComponentRef<any>, activatedRoute: ActivatedRoute): void {
+    const navigation = this.router.getCurrentNavigation();
     super.attach(ref, activatedRoute);
 
     if (isMountable(ref.instance)) {
-      getMountable(ref.instance).mount(this.router.getCurrentNavigation());
+      getMountable(ref.instance).mount(navigation);
     }
   }
 
@@ -39,9 +41,10 @@ export class MountableRouterOutlet extends RouterOutlet {
     activatedRoute: ActivatedRoute,
     resolver: ComponentFactoryResolver | null
   ) {
+    const navigation = this.router.getCurrentNavigation();
     super.activateWith(activatedRoute, resolver);
     if (isMountable(this.component)) {
-      getMountable(this.component).mount(this.router.getCurrentNavigation());
+      getMountable(this.component).mount(navigation);
     }
   }
 
